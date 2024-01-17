@@ -5,5 +5,6 @@ def read_csv(filename):
     with open(filename, 'r') as file:
         csv_reader = csv.reader(file)
         for row in csv_reader:
-            data.append(row)
+            [key, value] = row[0].split('\t')
+            data.append((key, value))
     return data
