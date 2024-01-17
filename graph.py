@@ -1,6 +1,7 @@
 class Node:
-    def __init__(self, key):
+    def __init__(self, key, value):
         self.key = key
+        self.value = value
         self.left = None
         self.right = None
         self.height = 1
@@ -19,30 +20,30 @@ class AVLTree:
     def __init__(self):
         self.root = None
 
-    def insert_node(self, key) -> None:
+    def insert_node(self, key, value) -> None:
         '''
-            insert_node(key)
+            insert_node(key, value)
             : Tree의 적절한 위치에 Node를 삽입 후 root 초기화,
-            - 이미 있는 노드이면 삽입을 하지 않음
+            - key 기준으로 검색 후 이미 있는 노드이면 삽입을 하지 않음
         '''
         if self.search_node(key) is not None:
             return
         
-        self.root = self._insert_node(self.root, key)
+        self.root = self._insert_node(self.root, key, value)
     
-    def _insert_node(self, node: Node, key):
+    def _insert_node(self, node: Node, key, value):
         '''
             - root가 None이라면 (아무것도 없다면) root에 삽입
             - 아니라면 재귀를 통해 찾아감
             - 넣고 나서, check_status 함수를 호출해서 balance check
         '''
         if node is None:
-            return Node(key)
+            return Node(key, value)
 
         if key < node.key:
-            node.left = self._insert_node(node.left, key)
+            node.left = self._insert_node(node.left, key, value)
         else:
-            node.right = self._insert_node(node.right, key)
+            node.right = self._insert_node(node.right, key, value)
             
         return self.rebalance_tree(node)
 
@@ -228,7 +229,7 @@ class AVLTree:
             return
 
         mid = (left + right) // 2
-        levels[level][mid] = str(node.key)
+        levels[level][mid] = f'({str(node.key)}, {str(node.value)})'
 
         self._fill_levels(node.left, level + 1, levels, left, mid - 1)
         self._fill_levels(node.right, level + 1, levels, mid + 1, right)
@@ -238,7 +239,7 @@ class AVLTree:
             return
         
         height = self.root.height
-        width = 2 ** height - 1
+        width = 2 ** height - 1 + 5
         levels = [[' ' for _ in range(width)] for _ in range(height)]
 
         self._fill_levels(self.root, 0, levels, 0, width - 1)
