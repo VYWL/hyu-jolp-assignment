@@ -16,10 +16,6 @@ class Node:
         right_height = self.right.height if self.right else 0
         return left_height - right_height
 
-class BTree:
-    def __init__(self):
-        self.root = None
-
 class AVLTree:
     def __init__(self):
         self.root = None
