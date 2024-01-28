@@ -1,255 +1,144 @@
 class Node:
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-        self.left = None
-        self.right = None
-        self.height = 1
-
-    def update_height(self):
-        left_height = self.left.height if self.left else 0
-        right_height = self.right.height if self.right else 0
-        self.height = max(left_height, right_height) + 1
-
-    def get_balance_factor(self):
-        left_height = self.left.height if self.left else 0
-        right_height = self.right.height if self.right else 0
-        return left_height - right_height
+    def __init__(self, t):
+        self.keys = []
+        self.values = []
+        self.children = []
+        self.leaf = True
 
 class BTree:
-    def __init__(self):
+    def __init__(self, t):
         self.root = None
+        self.t = t # t: Node 내 최대 key-value 쌍의 개수를 결정
 
-class AVLTree:
-    def __init__(self):
-        self.root = None
-
-    def insert_node(self, key, value) -> None:
-        '''
-            insert_node(key, value)
-            : Tree의 적절한 위치에 Node를 삽입 후 root 초기화,
-            - key 기준으로 검색 후 이미 있는 노드이면 삽입을 하지 않음
-        '''
-        if self.search_node(key) is not None:
-            return
-        
-        self.root = self._insert_node(self.root, key, value)
-    
-    def _insert_node(self, node: Node, key, value):
-        '''
-            - root가 None이라면 (아무것도 없다면) root에 삽입
-            - 아니라면 재귀를 통해 찾아감
-            - 넣고 나서, check_status 함수를 호출해서 balance check
-        '''
-        if node is None:
-            return Node(key, value)
-
-        if key < node.key:
-            node.left = self._insert_node(node.left, key, value)
-        else:
-            node.right = self._insert_node(node.right, key, value)
-            
-        return self.rebalance_tree(node)
-
-    def search_node(self, key) -> Node:
-        '''
-            search_node(key)
-            : key를 기준으로 Tree에 해당 key의 Node가 있는지 찾아주는 함수
-        '''
-        return self._search_node(self.root, key)
-    
-    def _search_node(self, node: Node, key):
-        '''
-            - 찾았다면, Node를 return
-            - 못 찾았다면, None 반환
-        '''
-        if node is None or node.key == key:
-            return node
-        
-        if key < node.key:
-            return self._search_node(node.left, key)
-        else :
-            return self._search_node(node.right, key)
-
-
-    def delete_node(self, key):
-        '''
-            delete_node(key)
-            : key를 기준으로 찾은 Node를 삭제
-                - Tree에 없는 key라면, 아무일이 일어나지 않음
-        '''
-        if self.search_node(key) is  None:
-            return
-        
-        self.root = self._delete_node(self.root, key) 
-    
-    def _delete_node(self, node: Node, key):
-        '''
-            - 해당 Node의 left child가 있다면
-                - 그 중 가장 큰 원소를 찾아서 바꾼뒤에 해당 원소(left child 중 젤 큰거)삭제
-                - upwind 하면서 check_status 함수를 호출해서 balance check
-            - left child가 없다면
-                - right child를 현재 Node로 대체후, upwind 하면서 rebalance 함수를 호출해서 balance check
-            - right child도 없다면
-                - 그냥 삭제 후 upwind 하면서 rebalance 함수를 호출해서 balance check
-        '''
-        if node is None:
-            return node
-
-        # search랑 아이디어는 같음 -> 재귀로 타고타고 감
-        if key < node.key:
-            node.left = self._delete_node(node.left, key)
-        elif key > node.key:
-            node.right = self._delete_node(node.right, key)
-        else:
-            # child가 없는 경우
-            if node.height == 1:
-                return None
-            
-            # 낱개 child가 있는 경우
-            if node.left is None:
-                return node.right
-            if node.right is None:
-                return node.left
-            
-            # Copy
-            max_value_node = self.get_max_value_node(node.left)
-            node.key = max_value_node.key
-            node.value = max_value_node.value
-            node.left = self._delete_node(node.left, max_value_node.key)
-            
-        return self.rebalance_tree(node)
-            
-    def get_max_value_node(self, node: Node) -> Node:
-        '''
-            자식중 가장 큰 key값을 찾음
-        '''
-        if node is None or node.right is None:
-            return node
-        
-        return self.get_max_value_node(node.right)
-            
-   
-    def rebalance_tree(self, node: Node):
-        ''''
-            rebalance_tree(node)
-            : Operation 이후, balance가 무너지지 않았는지 확인하는 함수
-                만약, 해당 key Node 중심으로 근처 BF를 확인하고
-                적절히 case check(LL, LR, RL, RR) 후에 호출
-        '''
-        if node is None:
+    def search_node(self, key, node=None) -> Node:
+        if self.root is None:
             return None
         
-        node.update_height()
-        balance_factor = node.get_balance_factor()
-        
-        # LL Case
-        if balance_factor > 1 and node.left.get_balance_factor() >= 0:
-            return self.rotate_right(node)
-        
-        # LR Case
-        if balance_factor > 1 and node.left.get_balance_factor() < 0:
-            node.left = self.rotate_left(node.left)
-            return self.rotate_right(node)
-        
-        # RL Case
-        if balance_factor < -1 and node.right.get_balance_factor() > 0:
-            node.right = self.rotate_right(node.right)
-            return self.rotate_left(node)
-        
-        # RR Case
-        if balance_factor < -1 and node.right.get_balance_factor() <= 0:
-            return self.rotate_left(node)
-        
-        return node
-    
-    '''
-        기본 회전 관련 함수
-    '''
-    
-    def rotate_left(self, y):
-        '''
-            해당 key를 기준을 rotating right를 수행하는 함수 (가장 아래있는 노드부터, x, y, z)
-                1. y노드의 오른쪽 자식 노드를 z노드로 변경.
-                2. z노드 왼쪽 자식 노드를 y노드 오른쪽 서브트리(T2)로 변경합니다.
-                3. y를 새로운 루트 노드로 설정.
-        '''
-        x = y.right
-        T2 = x.left
-
-        # rotation
-        x.left = y
-        y.right = T2
-
-        # Update heights
-        y.update_height()
-        x.update_height()
-
-        return x
-    
-    def rotate_right(self, x):
-        '''
-            해당 key를 기준을 rotating left를 수행하는 함수  (가장 아래있는 노드부터, x, y, z)
-                y노드의 왼쪽 자식 노드를 z노드로 변경.
-                z노드 오른쪽 자식 노드를 y노드 왼쪽 서브트리(T2)로 변경.
-                y를 새로운 루트 노드로 설정.
-        '''
-        y = x.left
-        T3 = y.right
-
-        # rotation
-        y.right = x
-        x.left = T3
-
-        # Update heights
-        x.update_height()
-        y.update_height()
-
-        return y
-
-    def print_tree(self, node=None, level=0, max_height=None):
         if node is None:
             node = self.root
-            if node is None:
-                return
-            max_height = self.root.height  # 트리의 전체 높이를 설정
+            
+        for i, item in enumerate(node.keys):
+            if key == item:
+                return node.values[i]
 
-        # 최대 높이를 넘어가면 출력하지 않고 반환
-        if level >= max_height:
+        if node.leaf:
+            return None
+
+        for i in range(len(node.keys)):
+            if key < node.keys[i]:
+                return self.search_node(key, node.children[i])
+        return self.search_node(key, node.children[len(node.keys)])
+
+    def insert_node(self, key, value):
+        if self.search_node(key) is not None:
             return
 
-        # 오른쪽 자식이 있는 경우, 더 깊은 레벨로 재귀 호출
-        if node.right is not None:
-            self.print_tree(node.right, level + 1, max_height)
-
-        print(' ' * 4 * level + '->', node.key)
-
-        # 왼쪽 자식이 있는 경우, 더 깊은 레벨로 재귀 호출
-        if node.left is not None:
-            self.print_tree(node.left, level + 1, max_height)
+        if self.root is None:
+            self.root = Node(self.t)
+            self.root.keys.append(key)
+            self.root.values.append(value)
+        else:
+            self._insert_node(key, value, self.root)
             
+        
+    def _insert_node(self, key, value, node: Node):
+        if node.leaf:
+            # Leaf node에서는 직접 삽입
+            node.keys.append(key)
+            node.values.append(value)
+            node.keys, node.values = zip(*sorted(zip(node.keys, node.values)))
+            node.keys = list(node.keys)
+            node.values = list(node.values)
+        else:
+            # 위치 찾아서 삽입
+            i = 0
+            while i < len(node.keys) and key > node.keys[i]:
+                i += 1
+            self._insert_node(key, value, node.children[i])
+            
+        if len(node.keys) > 2 * self.t - 1:
+            self.split_node(node)
 
-    def _fill_levels(self, node, level, levels, left, right):
+
+    def split_node(self, node_to_split):
+        t = self.t
+        
+        mid_index = len(node_to_split.keys) // 2 - 1
+        mid_key = node_to_split.keys[mid_index]
+        mid_value = node_to_split.values[mid_index]
+
+        left_child = Node(t)
+        left_child.keys = node_to_split.keys[:mid_index]
+        left_child.values = node_to_split.values[:mid_index]
+        right_child = Node(t)
+        right_child.keys = node_to_split.keys[mid_index + 1:]
+        right_child.values = node_to_split.values[mid_index + 1:]
+
+        if not node_to_split.leaf:
+            left_child.children = node_to_split.children[:mid_index + 1]
+            right_child.children = node_to_split.children[mid_index + 1:]
+            left_child.leaf = False
+            right_child.leaf = False
+
+        if node_to_split == self.root:
+            new_root = Node(t)
+            new_root.keys = [mid_key]
+            new_root.values = [mid_value]
+            new_root.children = [left_child, right_child]
+            new_root.leaf = False
+            self.root = new_root
+        else:
+            parent = self._find_parent(self.root, node_to_split)
+            if parent is None:
+                return
+            
+            insert_index = self._find_insert_index(parent.keys, mid_key)
+            parent.keys.insert(insert_index, mid_key)
+            parent.values.insert(insert_index, mid_value)
+            parent.children[insert_index] = left_child
+            parent.children.insert(insert_index + 1, right_child)
+
+            if len(parent.keys) > 2 * t - 1:
+                self.split_node(parent)
+
+    def _find_insert_index(self, keys, key_to_insert):
+        for i, key in enumerate(keys):
+            if key_to_insert < key:
+                return i
+        return len(keys)
+    
+    def _find_parent(self, parent, child):
+        if parent.leaf or child in parent.children:
+            return parent
+        for node_child in parent.children:
+            if child in node_child.children:
+                return self._find_parent(node_child, child)
+        return None
+        
+    '''
+        FOR DEBUGGING
+        - 출력함수만 존재
+    '''
+        
+    def _collect_nodes(self, node, level, nodes):
         if node is None:
             return
 
-        mid = (left + right) // 2
-        levels[level][mid] = f'({str(node.key)}, {str(node.value)})'
+        if len(nodes) <= level:
+            nodes.append([])
 
-        self._fill_levels(node.left, level + 1, levels, left, mid - 1)
-        self._fill_levels(node.right, level + 1, levels, mid + 1, right)
+        node_representation = '(' + ', '.join(f'{k}:{v}' for k, v in zip(node.keys, node.values)) + ')'
+        nodes[level].append(node_representation)
 
-    def print_tree_horizontal(self):
-        if self.root is None:
-            return
-        
-        height = self.root.height
-        width = 2 ** height - 1 + 5
-        levels = [[' ' for _ in range(width)] for _ in range(height)]
+        if not node.leaf:
+            for child in node.children:
+                self._collect_nodes(child, level + 1, nodes)
 
-        self._fill_levels(self.root, 0, levels, 0, width - 1)
+    def print_tree(self):
+        nodes = []
+        self._collect_nodes(self.root, 0, nodes)
 
-        for level in levels:
-            print(''.join(level))
-
-
+        for level, nodes_at_level in enumerate(nodes):
+            # 각 레벨에서 노드 간의 간격을 계산
+            indent = 40 // (2 ** level)
+            print(f'Level {level}: {" " * indent}{(" " * indent).join(nodes_at_level)}')
