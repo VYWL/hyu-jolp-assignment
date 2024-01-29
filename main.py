@@ -20,6 +20,18 @@ def main():
             target_tree.print_tree()
             print(f'========== {new_key}, {new_value} - insertion ==========\n\n')
             
+            
+        while True:
+            new_key = int(input("지울 키 입력(0: quit): "))
+            new_value = new_key  # int(input("새 값 입력: "))
+            if new_key == 0:
+                break
+            print(f'========== {new_key}, {new_value} - deletion ==========')
+            target_tree.delete_node(new_key)
+            # 트리 출력 (디버깅 용도)
+            target_tree.print_tree()
+            print(f'========== {new_key}, {new_value} - deletion ==========\n\n')
+            
         return
 
     while True:
