@@ -6,12 +6,12 @@ from valid import *
 isDev= False
 
 def main():
-    target_tree = BTree(t=1000)
+    target_tree = BTree(t=31)
 
     if isDev:
         while True:
             new_key = int(input("새 키 입력(0: quit): "))
-            new_value = int(input("새 값 입력: "))
+            new_value = new_key  # int(input("새 값 입력: "))
             if new_key == 0:
                 break
             print(f'========== {new_key}, {new_value} - insertion ==========')
