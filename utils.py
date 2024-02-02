@@ -34,7 +34,10 @@ def save_tree_deletion(tree, deleted_keys, filename):
 
 def write_tree_deletion(node, deleted_keys, csv_writer):
     if node is not None:
-        write_tree_deletion(node.left, deleted_keys, csv_writer)
-        if node.key not in deleted_keys:
-            csv_writer.writerow([node.key, node.value])
-        write_tree_deletion(node.right, deleted_keys, csv_writer)
+        for child in node.children[:-1]:
+            write_tree_deletion(child, deleted_keys, csv_writer)
+        for key, value in zip(node.keys, node.values):
+            if key not in deleted_keys:
+                csv_writer.writerow([key, value])
+        if not node.leaf:
+            write_tree_deletion(node.children[-1], deleted_keys, csv_writer)
