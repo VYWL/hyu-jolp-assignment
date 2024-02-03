@@ -19,7 +19,7 @@ class BTree:
         while not current_node.leaf:
             for i, item in enumerate(current_node.keys):
                 if key == item:
-                    return current_node # current_node.values[i]
+                    return current_node
                 elif key < item:
                     current_node = current_node.children[i]
                     break
@@ -28,7 +28,7 @@ class BTree:
         
         for i, item in enumerate(current_node.keys):
             if key == item:
-                return current_node # current_node.values[i]
+                return current_node
             
         return None
 
@@ -68,6 +68,15 @@ class BTree:
         new_node = Node(t)
         mid_index = len(node_to_split.keys) // 2 
 
+        ''' 
+        [수정사항]
+        지난 Insertion만 구현했을때, 새 노드 2개를 정의하고 나서 children의 parent 정보를 수정하지 않아서,
+        동일한 split이 두번 이상 일어나는 경우가 생기게 되었음. 이는 매우 느린 처리시간으로 이어짐.
+        
+        => 기존 노드를 수정 + 새 노드는 오른쪽 자식 노드로 수정하는 방식으로 구조 변경 및 코드 수정
+        
+        즉, New node는 새로 추가되는 오른쪽 자식 노드가 되고, 기존 노드는 왼쪽 자식 노드가 됨
+        '''
         new_node.keys = node_to_split.keys[mid_index + 1:]
         new_node.values = node_to_split.values[mid_index + 1:]
         
@@ -86,6 +95,7 @@ class BTree:
         new_node.leaf = node_to_split.leaf
         new_node.parent = node_to_split.parent
 
+        # Root의 경우 split 시에 self.root를 갱신해주어야 함.
         if node_to_split == self.root:
             new_root = Node(t)
             new_root.keys.append(mid_key)
@@ -104,6 +114,13 @@ class BTree:
             parent.children.insert(insert_index + 1, new_node)
 
     def _find_insert_index(self, keys, key_to_insert):
+        '''
+        [수정사항]
+        B-Tree 내 모든 노드의 key는 정렬되어 있기 때문에,
+        모든 linear search를 Binary search로 변경하여 속도를 높임.
+        => (t=31) 일때 큰 속도 개선
+        '''
+        
         left, right = 0, len(keys) - 1
         while left <= right:
             mid = (left + right) // 2
@@ -120,6 +137,12 @@ class BTree:
         if node is None:
             node = self.root
 
+        '''
+        [수정사항]
+        B-Tree 내 모든 노드의 key는 정렬되어 있기 때문에,
+        모든 linear search를 Binary search로 변경하여 속도를 높임.
+        => (t=31) 일때 큰 속도 개선
+        '''
         left, right = 0, len(node.keys) - 1
         while left <= right:
             mid = (left + right) // 2
@@ -131,12 +154,17 @@ class BTree:
 
         if i < len(node.keys) and node.keys[i] == key:
             if node.leaf:
-                del node.keys[i]
-                del node.values[i]
-                self._fix_node_after_deletion(node)
+                node.keys.pop(i)
+                node.values.pop(i)
+                self.postprocess_node(node)
             else:
                 left_child = node.children[i]
                 right_child = node.children[i + 1]
+                
+                '''
+                경우에 따라, 좌측 child의 가장 큰 키 값 혹은 우측 child의 가장 작은 키 값을 조회
+                -> 값을 미리 복사하고 재귀를 통해(연쇄적인 merge가 일어날 수 있으므로), 해당 노드를 지우는 방식으로 처리
+                '''
                 if len(left_child.keys) >= self.t:
                     pred_key, pred_value = self.get_predecessor(left_child)
                     node.keys[i] = pred_key
@@ -162,19 +190,19 @@ class BTree:
             else:
                 self.delete_node(key, node.children[i])
 
+
     def get_predecessor(self, node):
-        # 왼쪽 자식에서 가장 큰 키 찾기
         while not node.leaf:
             node = node.children[len(node.children) - 1]
         return node.keys[len(node.keys) - 1], node.values[len(node.values) - 1]
 
     def get_successor(self, node):
-        # 오른쪽 자식에서 가장 작은 키 찾기
         while not node.leaf:
             node = node.children[0]
         return node.keys[0], node.values[0]
 
-    def _fix_node_after_deletion(self, node):
+    # 분기 처리하기 귀찮아서 별도 함수에서 후처리 -> key가 없거나 부족한 경우 처리
+    def postprocess_node(self, node):
         if node == self.root:
             if len(node.keys) == 0 and not node.leaf:
                 self.root = node.children[0]
@@ -207,9 +235,11 @@ class BTree:
             self.root = child
             child.parent = None
 
+    '''
+    키 개수가 부족한 경우 borrow 해와야함
+    -> index 기준으로 좌우 child 살피고 하나를 가져옴
+    '''
     def fill_node(self, node, idx):
-        # 현재 노드가 최소 키 수보다 적은 경우
-
         if idx != 0 and len(node.children[idx - 1].keys) >= self.t:
             self.borrow_from_prev(node, idx)
         elif idx != len(node.keys) and len(node.children[idx + 1].keys) >= self.t:
